@@ -7,105 +7,220 @@ canvas.height = window.innerHeight;
 const lifeText = document.getElementById("life");
 const waveText = document.getElementById("wave");
 const scoreText = document.getElementById("score");
+const skillText = document.getElementById("skill");
 
 const player = {
   x: canvas.width / 2,
   y: canvas.height / 2,
-  size: 30,
+
+  size: 35,
   speed: 5,
+
+  color: "#00e5ff",
+
   life: 100,
-  color: "#00f0ff"
+
+  damage: 1,
+
+  attackCooldown: 0,
+  skillCooldown: 0,
+
+  attacking: false,
+  usingSkill: false
 };
 
 let keys = {};
+
 let enemies = [];
-let bullets = [];
+
 let score = 0;
 let wave = 1;
 
+let screenShake = 0;
+
 document.addEventListener("keydown", e => {
+
   keys[e.key.toLowerCase()] = true;
+
+  if(e.key.toLowerCase() === "e"){
+    attack();
+  }
+
+  if(e.key === "1"){
+    skill();
+  }
+
 });
 
 document.addEventListener("keyup", e => {
   keys[e.key.toLowerCase()] = false;
 });
 
-document.addEventListener("click", shoot);
+function spawnEnemy(){
 
-function shoot() {
-  bullets.push({
-    x: player.x,
-    y: player.y,
-    size: 8,
-    speed: 10
-  });
-}
+  let side = Math.floor(Math.random() * 4);
 
-function spawnEnemy() {
+  let x,y;
+
+  if(side === 0){
+    x = 0;
+    y = Math.random() * canvas.height;
+  }
+
+  if(side === 1){
+    x = canvas.width;
+    y = Math.random() * canvas.height;
+  }
+
+  if(side === 2){
+    x = Math.random() * canvas.width;
+    y = 0;
+  }
+
+  if(side === 3){
+    x = Math.random() * canvas.width;
+    y = canvas.height;
+  }
+
   enemies.push({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    size: 25,
-    speed: 1 + wave * 0.2,
-    life: 3
+    x,
+    y,
+
+    size: 30,
+
+    speed: 1 + wave * 0.15,
+
+    life: 3,
+
+    color:"#ff0044",
+
+    knockbackX:0,
+    knockbackY:0
   });
 }
 
-function update() {
+function attack(){
 
-  // Movimento
+  if(player.attackCooldown > 0) return;
+
+  player.attacking = true;
+
+  player.attackCooldown = 25;
+
+  screenShake = 5;
+
+  enemies.forEach(enemy => {
+
+    const dx = enemy.x - player.x;
+    const dy = enemy.y - player.y;
+
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if(dist < 100){
+
+      enemy.life -= player.damage;
+
+      enemy.knockbackX = dx * 0.15;
+      enemy.knockbackY = dy * 0.15;
+
+      if(enemy.life <= 0){
+
+        score += 10;
+
+        enemies.splice(enemies.indexOf(enemy),1);
+      }
+    }
+  });
+
+  setTimeout(() => {
+    player.attacking = false;
+  },100);
+
+}
+
+function skill(){
+
+  if(player.skillCooldown > 0) return;
+
+  player.usingSkill = true;
+
+  player.skillCooldown = 300;
+
+  screenShake = 15;
+
+  enemies.forEach(enemy => {
+
+    const dx = enemy.x - player.x;
+    const dy = enemy.y - player.y;
+
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if(dist < 180){
+
+      enemy.life -= 5;
+
+      enemy.knockbackX = dx * 0.4;
+      enemy.knockbackY = dy * 0.4;
+
+      if(enemy.life <= 0){
+
+        score += 20;
+
+        enemies.splice(enemies.indexOf(enemy),1);
+      }
+    }
+  });
+
+  setTimeout(() => {
+    player.usingSkill = false;
+  },300);
+}
+
+function update(){
+
   if(keys["w"]) player.y -= player.speed;
   if(keys["s"]) player.y += player.speed;
   if(keys["a"]) player.x -= player.speed;
   if(keys["d"]) player.x += player.speed;
 
-  // Bullets
-  bullets.forEach((b, i) => {
-    b.y -= b.speed;
+  player.x = Math.max(0, Math.min(canvas.width, player.x));
+  player.y = Math.max(0, Math.min(canvas.height, player.y));
 
-    if(b.y < 0){
-      bullets.splice(i,1);
-    }
-  });
+  if(player.attackCooldown > 0){
+    player.attackCooldown--;
+  }
 
-  // Inimigos
-  enemies.forEach((enemy, ei) => {
+  if(player.skillCooldown > 0){
+    player.skillCooldown--;
+  }
+
+  enemies.forEach(enemy => {
 
     const dx = player.x - enemy.x;
     const dy = player.y - enemy.y;
+
     const dist = Math.sqrt(dx*dx + dy*dy);
 
-    enemy.x += dx/dist * enemy.speed;
-    enemy.y += dy/dist * enemy.speed;
+    enemy.x += (dx / dist) * enemy.speed;
+    enemy.y += (dy / dist) * enemy.speed;
 
-    // Dano player
+    enemy.x += enemy.knockbackX;
+    enemy.y += enemy.knockbackY;
+
+    enemy.knockbackX *= 0.9;
+    enemy.knockbackY *= 0.9;
+
     if(dist < player.size){
-      player.life -= 0.2;
+
+      player.life -= 0.15;
+
+      screenShake = 3;
     }
 
-    // Colisão bala
-    bullets.forEach((b, bi) => {
-
-      const bdx = b.x - enemy.x;
-      const bdy = b.y - enemy.y;
-      const bdist = Math.sqrt(bdx*bdx + bdy*bdy);
-
-      if(bdist < enemy.size){
-        enemy.life--;
-
-        bullets.splice(bi,1);
-
-        if(enemy.life <= 0){
-          enemies.splice(ei,1);
-          score += 10;
-        }
-      }
-    });
   });
 
-  // Nova wave
   if(enemies.length === 0){
+
     wave++;
 
     for(let i=0;i<wave*3;i++){
@@ -113,24 +228,61 @@ function update() {
     }
   }
 
-  // HUD
   lifeText.innerText = `❤️ Vida: ${Math.floor(player.life)}`;
   waveText.innerText = `🌊 Wave: ${wave}`;
   scoreText.innerText = `⭐ Score: ${score}`;
 
-  // Game Over
+  if(player.skillCooldown <= 0){
+    skillText.innerText = `⚡ Skill: READY`;
+  }else{
+    skillText.innerText = `⚡ Skill: ${Math.floor(player.skillCooldown / 60)}s`;
+  }
+
   if(player.life <= 0){
-    alert(`Game Over!\nScore: ${score}`);
+
+    alert(`GAME OVER\n\nWave: ${wave}\nScore: ${score}`);
+
     location.reload();
   }
+
+  if(screenShake > 0){
+    screenShake *= 0.9;
+  }
+
 }
 
-function draw() {
+function draw(){
+
+  ctx.save();
+
+  const shakeX = (Math.random() - 0.5) * screenShake;
+  const shakeY = (Math.random() - 0.5) * screenShake;
+
+  ctx.translate(shakeX, shakeY);
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // Player
+  enemies.forEach(enemy => {
+
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = enemy.color;
+
+    ctx.fillStyle = enemy.color;
+
+    ctx.fillRect(
+      enemy.x - enemy.size/2,
+      enemy.y - enemy.size/2,
+      enemy.size,
+      enemy.size
+    );
+
+  });
+
+  ctx.shadowBlur = 25;
+  ctx.shadowColor = player.color;
+
   ctx.fillStyle = player.color;
+
   ctx.fillRect(
     player.x - player.size/2,
     player.y - player.size/2,
@@ -138,36 +290,59 @@ function draw() {
     player.size
   );
 
-  // Bullets
-  ctx.fillStyle = "#ffff00";
+  // ATAQUE
+  if(player.attacking){
 
-  bullets.forEach(b => {
     ctx.beginPath();
-    ctx.arc(b.x,b.y,b.size,0,Math.PI*2);
-    ctx.fill();
-  });
 
-  // Enemies
-  ctx.fillStyle = "#ff0033";
+    ctx.strokeStyle = "#ffffff";
 
-  enemies.forEach(enemy => {
-    ctx.fillRect(
-      enemy.x - enemy.size/2,
-      enemy.y - enemy.size/2,
-      enemy.size,
-      enemy.size
+    ctx.lineWidth = 8;
+
+    ctx.arc(
+      player.x,
+      player.y,
+      70,
+      0,
+      Math.PI * 1.5
     );
-  });
+
+    ctx.stroke();
+  }
+
+  // SKILL
+  if(player.usingSkill){
+
+    ctx.beginPath();
+
+    ctx.strokeStyle = "#00ffff";
+
+    ctx.lineWidth = 15;
+
+    ctx.arc(
+      player.x,
+      player.y,
+      150,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.stroke();
+  }
+
+  ctx.restore();
 }
 
 function gameLoop(){
+
   update();
+
   draw();
+
   requestAnimationFrame(gameLoop);
 }
 
-// Start
-for(let i=0;i<3;i++){
+for(let i=0;i<5;i++){
   spawnEnemy();
 }
 
