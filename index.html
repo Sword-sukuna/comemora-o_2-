@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arena Rush Dungeon</title>
+  <title>Arena Rush Roguelike</title>
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -14,39 +14,13 @@
 
     <h1>ARENA RUSH</h1>
 
-    <div class="buttons">
+    <button onclick="startGame()">
+      INICIAR
+    </button>
 
-      <button onclick="startGame()">
-        INICIAR
-      </button>
-
-      <button onclick="loadGame()">
-        CONTINUAR
-      </button>
-
-    </div>
-
-    <div id="classSelect">
-
-      <h2>ESCOLHA SUA CLASSE</h2>
-
-      <div class="classes">
-
-        <button onclick="chooseClass('samurai')">
-          ⚔️ Samurai
-        </button>
-
-        <button onclick="chooseClass('rogue')">
-          🗡️ Rogue
-        </button>
-
-        <button onclick="chooseClass('mage')">
-          🔮 Mage
-        </button>
-
-      </div>
-
-    </div>
+    <button onclick="loadSave()">
+      CONTINUAR
+    </button>
 
   </div>
 
@@ -66,27 +40,43 @@
   <!-- HUD -->
   <div id="hud">
 
-    <div id="topHud">
+    <div id="stats">
 
       <span id="life"></span>
+      <span id="souls"></span>
       <span id="floor"></span>
       <span id="room"></span>
-      <span id="score"></span>
 
     </div>
 
     <div id="cooldowns">
 
-      <div>E<div class="bar"><div id="barE"></div></div></div>
+      <div>E
+        <div class="bar">
+          <div id="barE"></div>
+        </div>
+      </div>
 
-      <div>Q<div class="bar"><div id="barQ"></div></div></div>
+      <div>Q
+        <div class="bar">
+          <div id="barQ"></div>
+        </div>
+      </div>
 
-      <div>1<div class="bar"><div id="bar1"></div></div></div>
+      <div>1
+        <div class="bar">
+          <div id="bar1"></div>
+        </div>
+      </div>
 
     </div>
 
   </div>
 
+  <!-- MINIMAPA -->
+  <canvas id="minimap"></canvas>
+
+  <!-- GAME -->
   <canvas id="game"></canvas>
 
   <script src="script.js"></script>

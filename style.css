@@ -10,7 +10,7 @@ body{
   background:black;
 }
 
-canvas{
+#game{
   display:none;
 }
 
@@ -26,6 +26,8 @@ canvas{
 
   justify-content:center;
   align-items:center;
+
+  gap:20px;
 
   background:
   radial-gradient(circle,#111,#000);
@@ -45,33 +47,20 @@ h1{
   color:#00e5ff;
 
   text-shadow:0 0 30px #00e5ff;
-
-  margin-bottom:20px;
-}
-
-h2{
-  margin-top:40px;
-  margin-bottom:20px;
-}
-
-.buttons,
-.classes{
-  display:flex;
-  gap:20px;
 }
 
 button{
-  padding:15px 35px;
+  padding:15px 40px;
 
   border:none;
+
+  border-radius:10px;
 
   background:#00e5ff;
 
   color:black;
 
-  font-size:20px;
-
-  border-radius:10px;
+  font-size:22px;
 
   cursor:pointer;
 
@@ -92,14 +81,14 @@ button:hover{
 
   flex-direction:column;
 
-  gap:10px;
+  gap:15px;
 
   color:white;
 
   z-index:10;
 }
 
-#topHud{
+#stats{
   display:flex;
   gap:20px;
 
@@ -109,6 +98,7 @@ button:hover{
 #cooldowns{
   display:flex;
   flex-direction:column;
+
   gap:10px;
 }
 
@@ -126,9 +116,23 @@ button:hover{
 .bar div{
   height:100%;
 
-  background:#00e5ff;
-
   width:100%;
 
-  transition:0.1s;
+  background:#00e5ff;
+}
+
+#minimap{
+  position:fixed;
+
+  top:20px;
+  right:20px;
+
+  width:160px;
+  height:160px;
+
+  background:rgba(0,0,0,0.5);
+
+  border:2px solid #00e5ff;
+
+  z-index:20;
 }
