@@ -4,31 +4,42 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+const hud = document.getElementById("hud");
+
 const lifeText = document.getElementById("life");
 const waveText = document.getElementById("wave");
 const scoreText = document.getElementById("score");
-const skillText = document.getElementById("skill");
+
+const menu = document.getElementById("menu");
+const gameOverScreen =
+document.getElementById("gameOver");
+
+const finalScore =
+document.getElementById("finalScore");
 
 const player = {
 
-  x: canvas.width / 2,
-  y: canvas.height / 2,
+  x: canvas.width/2,
+  y: canvas.height/2,
 
-  size: 35,
+  size:35,
 
-  speed: 5,
+  speed:5,
 
-  color: "#00e5ff",
+  color:"#00e5ff",
 
-  life: 100,
+  life:10,
 
-  damage: 1,
+  damage:1,
 
-  attackCooldown: 0,
-  skillCooldown: 0,
+  attackCooldown:0,
+  skillCooldown:0,
+  explosionCooldown:0,
+  berserkCooldown:0,
+  dashCooldown:0,
 
-  attacking: false,
-  usingSkill: false
+  attacking:false,
+  usingSkill:false
 };
 
 let keys = {};
@@ -40,66 +51,64 @@ let wave = 1;
 
 let screenShake = 0;
 
+let gameStarted = false;
+
 const maps = [
 
-  // MAPA 1
-  [
-    {x:300,y:100,width:40,height:500},
-    {x:600,y:0,width:40,height:400},
-    {x:900,y:200,width:40,height:500},
-  ],
+  {
+    name:"LAVA",
+    bg:"#2a0000",
+    wall:"#3a3a3a",
 
-  // MAPA 2
-  [
-    {x:200,y:200,width:700,height:40},
-    {x:200,y:500,width:700,height:40},
-    {x:500,y:200,width:40,height:340},
-  ],
+    walls:[
+      {x:300,y:100,width:40,height:500},
+      {x:700,y:0,width:40,height:400},
+      {x:1000,y:200,width:40,height:500},
+    ]
+  },
 
-  // MAPA 3
-  [
-    {x:150,y:150,width:40,height:600},
-    {x:400,y:0,width:40,height:500},
-    {x:700,y:250,width:40,height:500},
-    {x:1000,y:100,width:40,height:600},
-  ],
+  {
+    name:"CYBER",
+    bg:"#000a1f",
+    wall:"#0044ff",
 
-  // MAPA 4
-  [
-    {x:250,y:250,width:500,height:40},
-    {x:250,y:600,width:500,height:40},
-    {x:250,y:250,width:40,height:400},
-    {x:710,y:250,width:40,height:400},
-  ],
+    walls:[
+      {x:200,y:200,width:700,height:40},
+      {x:200,y:500,width:700,height:40},
+      {x:500,y:200,width:40,height:340},
+    ]
+  },
 
-  // MAPA 5
-  [
-    {x:100,y:100,width:1000,height:40},
-    {x:100,y:600,width:1000,height:40},
-    {x:500,y:100,width:40,height:540},
-  ],
+  {
+    name:"VOID",
+    bg:"#12001f",
+    wall:"#6f00ff",
 
-  // MAPA 6
-  [
-    {x:350,y:0,width:40,height:300},
-    {x:700,y:300,width:40,height:400},
-    {x:1000,y:100,width:40,height:500},
-  ]
+    walls:[
+      {x:150,y:150,width:40,height:600},
+      {x:400,y:0,width:40,height:500},
+      {x:700,y:250,width:40,height:500},
+      {x:1000,y:100,width:40,height:600},
+    ]
+  }
+
 ];
 
 const currentMap =
-maps[Math.floor(Math.random() * maps.length)];
+maps[Math.floor(Math.random()*maps.length)];
 
 document.addEventListener("keydown", e => {
 
   keys[e.key.toLowerCase()] = true;
+
+  if(!gameStarted) return;
 
   if(e.key.toLowerCase() === "e"){
     attack();
   }
 
   if(e.key === "1"){
-    skill();
+    slash();
   }
 
   if(e.key === "2"){
@@ -122,30 +131,103 @@ document.addEventListener("keyup", e => {
 
 });
 
+function startGame(){
+
+  menu.style.display = "none";
+
+  canvas.style.display = "block";
+
+  hud.style.display = "flex";
+
+  gameStarted = true;
+
+  spawnWave();
+}
+
+function restartGame(){
+  location.reload();
+}
+
+function saveGame(){
+
+  localStorage.setItem("arenaScore",score);
+
+}
+
+function loadGame(){
+
+  const save =
+  localStorage.getItem("arenaScore");
+
+  if(save){
+
+    score = parseInt(save);
+
+  }
+
+  startGame();
+}
+
+function spawnWave(){
+
+  for(let i=0;i<wave*3;i++){
+
+    spawnEnemy();
+
+  }
+
+  if(wave % 5 === 0){
+
+    enemies.push({
+
+      x:100,
+      y:100,
+
+      size:80,
+
+      speed:1,
+
+      life:20,
+
+      damage:3,
+
+      boss:true,
+
+      color:"#ff9900",
+
+      knockbackX:0,
+      knockbackY:0
+    });
+
+  }
+
+}
+
 function spawnEnemy(){
 
-  let side = Math.floor(Math.random() * 4);
+  let side =
+  Math.floor(Math.random()*4);
 
   let x;
   let y;
 
   if(side === 0){
     x = 0;
-    y = Math.random() * canvas.height;
+    y = Math.random()*canvas.height;
   }
 
   if(side === 1){
     x = canvas.width;
-    y = Math.random() * canvas.height;
+    y = Math.random()*canvas.height;
   }
 
   if(side === 2){
-    x = Math.random() * canvas.width;
+    x = Math.random()*canvas.width;
     y = 0;
   }
 
   if(side === 3){
-    x = Math.random() * canvas.width;
+    x = Math.random()*canvas.width;
     y = canvas.height;
   }
 
@@ -154,11 +236,15 @@ function spawnEnemy(){
     x,
     y,
 
-    size: 30,
+    size:30,
 
-    speed: 1 + wave * 0.15,
+    speed:2,
 
-    life: 3,
+    life:3,
+
+    damage:1,
+
+    boss:false,
 
     color:"#ff0044",
 
@@ -169,117 +255,63 @@ function spawnEnemy(){
 
 function attack(){
 
-  if(player.attackCooldown > 0) return;
+  if(player.attackCooldown > 0)
+  return;
+
+  player.attackCooldown = 30;
 
   player.attacking = true;
 
-  player.attackCooldown = 25;
+  damageEnemies(100,player.damage);
 
-  screenShake = 5;
-
-  enemies.forEach(enemy => {
-
-    const dx = enemy.x - player.x;
-    const dy = enemy.y - player.y;
-
-    const dist = Math.sqrt(dx*dx + dy*dy);
-
-    if(dist < 100){
-
-      enemy.life -= player.damage;
-
-      enemy.knockbackX = dx * 0.15;
-      enemy.knockbackY = dy * 0.15;
-
-      if(enemy.life <= 0){
-
-        score += 10;
-
-        enemies.splice(enemies.indexOf(enemy),1);
-      }
-    }
-  });
-
-  setTimeout(() => {
+  setTimeout(()=>{
     player.attacking = false;
   },100);
+
 }
 
-function skill(){
+function slash(){
 
-  if(player.skillCooldown > 0) return;
-
-  player.usingSkill = true;
+  if(player.skillCooldown > 0)
+  return;
 
   player.skillCooldown = 300;
 
-  screenShake = 15;
+  player.usingSkill = true;
 
-  enemies.forEach(enemy => {
+  damageEnemies(180,5);
 
-    const dx = enemy.x - player.x;
-    const dy = enemy.y - player.y;
-
-    const dist = Math.sqrt(dx*dx + dy*dy);
-
-    if(dist < 180){
-
-      enemy.life -= 5;
-
-      enemy.knockbackX = dx * 0.4;
-      enemy.knockbackY = dy * 0.4;
-
-      if(enemy.life <= 0){
-
-        score += 20;
-
-        enemies.splice(enemies.indexOf(enemy),1);
-      }
-    }
-  });
-
-  setTimeout(() => {
+  setTimeout(()=>{
     player.usingSkill = false;
   },300);
 }
 
 function explosion(){
 
-  enemies.forEach(enemy => {
+  if(player.explosionCooldown > 0)
+  return;
 
-    const dx = enemy.x - player.x;
-    const dy = enemy.y - player.y;
+  player.explosionCooldown = 500;
 
-    const dist = Math.sqrt(dx*dx + dy*dy);
-
-    if(dist < 250){
-
-      enemy.life -= 10;
-
-      enemy.knockbackX = dx * 0.7;
-      enemy.knockbackY = dy * 0.7;
-
-      if(enemy.life <= 0){
-
-        score += 30;
-
-        enemies.splice(enemies.indexOf(enemy),1);
-      }
-    }
-  });
+  damageEnemies(260,10);
 
   screenShake = 20;
 }
 
 function berserk(){
 
-  player.damage = 5;
+  if(player.berserkCooldown > 0)
+  return;
 
-  player.speed = 9;
+  player.berserkCooldown = 900;
+
+  player.damage = 4;
+
+  player.speed = 8;
 
   player.color = "#ff2222";
 
-  setTimeout(() => {
+  setTimeout(()=>{
 
     player.damage = 1;
 
@@ -292,9 +324,57 @@ function berserk(){
 
 function dash(){
 
-  player.x += 150;
+  if(player.dashCooldown > 0)
+  return;
+
+  player.dashCooldown = 120;
+
+  let dx = 0;
+  let dy = 0;
+
+  if(keys["w"]) dy = -1;
+  if(keys["s"]) dy = 1;
+  if(keys["a"]) dx = -1;
+  if(keys["d"]) dx = 1;
+
+  player.x += dx * 180;
+  player.y += dy * 180;
 
   screenShake = 10;
+}
+
+function damageEnemies(range,damage){
+
+  enemies.forEach(enemy=>{
+
+    const dx = enemy.x-player.x;
+    const dy = enemy.y-player.y;
+
+    const dist =
+    Math.sqrt(dx*dx+dy*dy);
+
+    if(dist < range){
+
+      enemy.life -= damage;
+
+      enemy.knockbackX = dx*0.2;
+      enemy.knockbackY = dy*0.2;
+
+      if(enemy.life <= 0){
+
+        score += enemy.boss ? 200 : 10;
+
+        enemies.splice(
+          enemies.indexOf(enemy),
+          1
+        );
+
+      }
+
+    }
+
+  });
+
 }
 
 function update(){
@@ -307,39 +387,61 @@ function update(){
   if(keys["a"]) player.x -= player.speed;
   if(keys["d"]) player.x += player.speed;
 
-  currentMap.forEach(wall => {
+  currentMap.walls.forEach(wall=>{
 
     if(
       player.x + player.size/2 > wall.x &&
-      player.x - player.size/2 < wall.x + wall.width &&
+      player.x - player.size/2 <
+      wall.x + wall.width &&
       player.y + player.size/2 > wall.y &&
-      player.y - player.size/2 < wall.y + wall.height
+      player.y - player.size/2 <
+      wall.y + wall.height
     ){
+
       player.x = oldX;
       player.y = oldY;
+
     }
+
   });
 
-  player.x = Math.max(0, Math.min(canvas.width, player.x));
-  player.y = Math.max(0, Math.min(canvas.height, player.y));
+  enemies.forEach(enemy=>{
 
-  if(player.attackCooldown > 0){
-    player.attackCooldown--;
-  }
+    const dx = player.x-enemy.x;
+    const dy = player.y-enemy.y;
 
-  if(player.skillCooldown > 0){
-    player.skillCooldown--;
-  }
+    const dist =
+    Math.sqrt(dx*dx+dy*dy);
 
-  enemies.forEach(enemy => {
+    let moveX =
+    (dx/dist)*enemy.speed;
 
-    const dx = player.x - enemy.x;
-    const dy = player.y - enemy.y;
+    let moveY =
+    (dy/dist)*enemy.speed;
 
-    const dist = Math.sqrt(dx*dx + dy*dy);
+    enemy.x += moveX;
+    enemy.y += moveY;
 
-    enemy.x += (dx / dist) * enemy.speed;
-    enemy.y += (dy / dist) * enemy.speed;
+    currentMap.walls.forEach(wall=>{
+
+      if(
+        enemy.x + enemy.size/2 > wall.x &&
+        enemy.x - enemy.size/2 <
+        wall.x + wall.width &&
+        enemy.y + enemy.size/2 > wall.y &&
+        enemy.y - enemy.size/2 <
+        wall.y + wall.height
+      ){
+
+        enemy.x -= moveX*2;
+
+        enemy.y -= moveY*2;
+
+        enemy.x += Math.random()*6-3;
+        enemy.y += Math.random()*6-3;
+      }
+
+    });
 
     enemy.x += enemy.knockbackX;
     enemy.y += enemy.knockbackY;
@@ -347,31 +449,16 @@ function update(){
     enemy.knockbackX *= 0.9;
     enemy.knockbackY *= 0.9;
 
-    currentMap.forEach(wall => {
-
-      if(
-        enemy.x + enemy.size/2 > wall.x &&
-        enemy.x - enemy.size/2 < wall.x + wall.width &&
-        enemy.y + enemy.size/2 > wall.y &&
-        enemy.y - enemy.size/2 < wall.y + wall.height
-      ){
-
-        enemy.x -= (dx / dist) * enemy.speed * 2;
-        enemy.y -= (dy / dist) * enemy.speed * 2;
-      }
-
-    });
-
     if(dist < player.size){
 
-      player.life -= 0.15;
+      player.life -= enemy.damage;
 
-      screenShake = 3;
+      screenShake = 8;
+
     }
 
   });
 
-  // COLISÃO ENTRE INIMIGOS
   for(let i=0;i<enemies.length;i++){
 
     for(let j=i+1;j<enemies.length;j++){
@@ -379,69 +466,100 @@ function update(){
       let a = enemies[i];
       let b = enemies[j];
 
-      let dx = b.x - a.x;
-      let dy = b.y - a.y;
+      let dx = b.x-a.x;
+      let dy = b.y-a.y;
 
-      let dist = Math.sqrt(dx*dx + dy*dy);
+      let dist =
+      Math.sqrt(dx*dx+dy*dy);
 
       let minDist = a.size;
 
       if(dist < minDist){
 
-        let angle = Math.atan2(dy,dx);
+        let angle =
+        Math.atan2(dy,dx);
 
-        let force = (minDist - dist) * 0.08;
+        let force =
+        (minDist-dist)*0.1;
 
-        a.x -= Math.cos(angle) * force;
-        a.y -= Math.sin(angle) * force;
+        a.x -= Math.cos(angle)*force;
+        a.y -= Math.sin(angle)*force;
 
-        b.x += Math.cos(angle) * force;
-        b.y += Math.sin(angle) * force;
+        b.x += Math.cos(angle)*force;
+        b.y += Math.sin(angle)*force;
       }
+
     }
+
   }
 
-  if(enemies.length === 0){
+  if(enemies.length <= 0){
 
     wave++;
 
-    for(let i=0;i<wave*3;i++){
-      spawnEnemy();
-    }
+    saveGame();
+
+    spawnWave();
+
   }
+
+  if(player.attackCooldown>0)
+  player.attackCooldown--;
+
+  if(player.skillCooldown>0)
+  player.skillCooldown--;
+
+  if(player.explosionCooldown>0)
+  player.explosionCooldown--;
+
+  if(player.berserkCooldown>0)
+  player.berserkCooldown--;
+
+  if(player.dashCooldown>0)
+  player.dashCooldown--;
 
   lifeText.innerText =
-  `❤️ Vida: ${Math.floor(player.life)}`;
+  `❤️ ${player.life}`;
 
   waveText.innerText =
-  `🌊 Wave: ${wave}`;
+  `🌊 ${wave}`;
 
   scoreText.innerText =
-  `⭐ Score: ${score}`;
+  `⭐ ${score}`;
 
-  if(player.skillCooldown <= 0){
+  document.getElementById("barE").style.width =
+  `${100-(player.attackCooldown/30)*100}%`;
 
-    skillText.innerText =
-    `⚡ Skill: READY`;
+  document.getElementById("barQ").style.width =
+  `${100-(player.dashCooldown/120)*100}%`;
 
-  }else{
+  document.getElementById("bar1").style.width =
+  `${100-(player.skillCooldown/300)*100}%`;
 
-    skillText.innerText =
-    `⚡ Skill: ${Math.floor(player.skillCooldown / 60)}s`;
-  }
+  document.getElementById("bar2").style.width =
+  `${100-(player.explosionCooldown/500)*100}%`;
+
+  document.getElementById("bar3").style.width =
+  `${100-(player.berserkCooldown/900)*100}%`;
 
   if(player.life <= 0){
 
-    alert(
-      `GAME OVER\n\nWave: ${wave}\nScore: ${score}`
-    );
+    gameStarted = false;
 
-    location.reload();
+    gameOverScreen.style.display =
+    "flex";
+
+    finalScore.innerText =
+    `Wave ${wave} | Score ${score}`;
+
   }
 
   if(screenShake > 0){
+
     screenShake *= 0.9;
+
   }
+
 }
 
 function draw(){
@@ -449,23 +567,29 @@ function draw(){
   ctx.save();
 
   const shakeX =
-  (Math.random() - 0.5) * screenShake;
+  (Math.random()-0.5)*screenShake;
 
   const shakeY =
-  (Math.random() - 0.5) * screenShake;
+  (Math.random()-0.5)*screenShake;
 
-  ctx.translate(shakeX, shakeY);
+  ctx.translate(shakeX,shakeY);
 
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = currentMap.bg;
 
-  // PAREDES
-  currentMap.forEach(wall => {
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
 
-    ctx.shadowBlur = 15;
+  currentMap.walls.forEach(wall=>{
 
-    ctx.shadowColor = "#444";
+    ctx.shadowBlur = 20;
 
-    ctx.fillStyle = "#222";
+    ctx.shadowColor = currentMap.wall;
+
+    ctx.fillStyle = currentMap.wall;
 
     ctx.fillRect(
       wall.x,
@@ -476,8 +600,7 @@ function draw(){
 
   });
 
-  // ENEMIES
-  enemies.forEach(enemy => {
+  enemies.forEach(enemy=>{
 
     ctx.shadowBlur = 20;
 
@@ -486,15 +609,14 @@ function draw(){
     ctx.fillStyle = enemy.color;
 
     ctx.fillRect(
-      enemy.x - enemy.size/2,
-      enemy.y - enemy.size/2,
+      enemy.x-enemy.size/2,
+      enemy.y-enemy.size/2,
       enemy.size,
       enemy.size
     );
 
   });
 
-  // PLAYER
   ctx.shadowBlur = 25;
 
   ctx.shadowColor = player.color;
@@ -502,18 +624,17 @@ function draw(){
   ctx.fillStyle = player.color;
 
   ctx.fillRect(
-    player.x - player.size/2,
-    player.y - player.size/2,
+    player.x-player.size/2,
+    player.y-player.size/2,
     player.size,
     player.size
   );
 
-  // ATAQUE
   if(player.attacking){
 
     ctx.beginPath();
 
-    ctx.strokeStyle = "#ffffff";
+    ctx.strokeStyle = "white";
 
     ctx.lineWidth = 8;
 
@@ -522,13 +643,13 @@ function draw(){
       player.y,
       70,
       0,
-      Math.PI * 1.5
+      Math.PI*1.5
     );
 
     ctx.stroke();
+
   }
 
-  // SKILL
   if(player.usingSkill){
 
     ctx.beginPath();
@@ -542,26 +663,29 @@ function draw(){
       player.y,
       150,
       0,
-      Math.PI * 2
+      Math.PI*2
     );
 
     ctx.stroke();
+
   }
 
   ctx.restore();
+
 }
 
 function gameLoop(){
 
-  update();
+  if(gameStarted){
 
-  draw();
+    update();
+
+    draw();
+
+  }
 
   requestAnimationFrame(gameLoop);
-}
 
-for(let i=0;i<5;i++){
-  spawnEnemy();
 }
 
 gameLoop();

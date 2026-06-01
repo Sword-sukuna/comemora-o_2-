@@ -1,6 +1,3 @@
-# index.html
-
-```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -12,20 +9,61 @@
 </head>
 <body>
 
-  <div id="hud">
-    <span id="life">❤️ Vida: 100</span>
-    <span id="wave">🌊 Wave: 1</span>
-    <span id="score">⭐ Score: 0</span>
-    <span id="skill">⚡ Skill: READY</span>
+  <!-- MENU -->
+  <div id="menu">
+
+    <h1>ARENA RUSH</h1>
+
+    <button onclick="startGame()">
+      INICIAR
+    </button>
+
+    <button onclick="loadGame()">
+      CARREGAR
+    </button>
+
+    <button>
+      CLASSES (EM BREVE)
+    </button>
+
   </div>
 
-  <div id="controls">
-    WASD = mover |
-    E = ataque |
-    Q = dash |
-    1 = slash |
-    2 = explosão |
-    3 = berserk
+  <!-- GAME OVER -->
+  <div id="gameOver">
+
+    <h1>YOU DIED</h1>
+
+    <p id="finalScore"></p>
+
+    <button onclick="restartGame()">
+      RESTART
+    </button>
+
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+
+    <div id="topHud">
+      <span id="life"></span>
+      <span id="wave"></span>
+      <span id="score"></span>
+    </div>
+
+    <div id="cooldowns">
+
+      <div>E <div class="bar"><div id="barE"></div></div></div>
+
+      <div>Q <div class="bar"><div id="barQ"></div></div></div>
+
+      <div>1 <div class="bar"><div id="bar1"></div></div></div>
+
+      <div>2 <div class="bar"><div id="bar2"></div></div></div>
+
+      <div>3 <div class="bar"><div id="bar3"></div></div></div>
+
+    </div>
+
   </div>
 
   <canvas id="game"></canvas>
