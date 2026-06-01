@@ -98,6 +98,8 @@ let currentRoomY = 1;
 
 let floor = 1;
 
+let isTransitioning = false;
+
 
 // ROOMS
 
@@ -451,25 +453,61 @@ function interact(){
 
   const room = getRoom();
 
+  if(!room) return;
+
+  // SAVE
+
   if(room.type === "save"){
 
-    saveGame();
+    const dx =
+    player.x - canvas.width/2;
+
+    const dy =
+    player.y - canvas.height/2;
+
+    const dist =
+    Math.sqrt(dx*dx + dy*dy);
+
+    if(dist < 120){
+
+      saveGame();
+
+      alert("JOGO SALVO");
+
+    }
 
   }
+
+  // UPGRADE
 
   if(
     room.type === "upgrade" &&
     !room.used
   ){
 
-    room.used = true;
+    const dx =
+    player.x - canvas.width/2;
 
-    player.damage += 1;
+    const dy =
+    player.y - canvas.height/2;
 
-    player.maxLife += 2;
+    const dist =
+    Math.sqrt(dx*dx + dy*dy);
 
-    player.life =
-    player.maxLife;
+    if(dist < 120){
+
+      room.used = true;
+
+      player.damage += 1;
+
+      player.maxLife += 2;
+
+      player.life =
+      player.maxLife;
+
+      alert("UPGRADE PEGO");
+
+    }
 
   }
 
@@ -480,7 +518,13 @@ function interact(){
 
 function changeRoom(direction){
 
+  if(isTransitioning) return;
+
+  isTransitioning = true;
+
   transitionAlpha = 1;
+
+  screenShake = 0;
 
   setTimeout(()=>{
 
@@ -491,7 +535,7 @@ function changeRoom(direction){
 
         currentRoomX++;
 
-        player.x = 80;
+        player.x = 120;
 
       }
 
@@ -504,7 +548,7 @@ function changeRoom(direction){
 
         currentRoomX--;
 
-        player.x = canvas.width - 120;
+        player.x = canvas.width - 160;
 
       }
 
@@ -517,7 +561,7 @@ function changeRoom(direction){
 
         currentRoomY--;
 
-        player.y = canvas.height - 120;
+        player.y = canvas.height - 160;
 
       }
 
@@ -530,7 +574,7 @@ function changeRoom(direction){
 
         currentRoomY++;
 
-        player.y = 80;
+        player.y = 120;
 
       }
 
@@ -545,6 +589,12 @@ function changeRoom(direction){
     }
 
     transitionAlpha = 0;
+
+    setTimeout(()=>{
+
+      isTransitioning = false;
+
+    },300);
 
   },250);
 
@@ -686,6 +736,12 @@ room.visited = true;
 
   updateHUD();
 
+  if(screenShake > 0){
+
+  screenShake *= 0.85;
+
+}
+
 }
 
 
@@ -784,7 +840,10 @@ function draw(){
   (Math.random()-0.5) *
   screenShake;
 
-  ctx.translate(shakeX,shakeY);
+  ctx.translate(
+  isTransitioning ? 0 : shakeX,
+  isTransitioning ? 0 : shakeY
+);
 
   ctx.clearRect(
     0,
