@@ -16,12 +16,14 @@ body{
 
 #menu,
 #gameOver{
+
   position:absolute;
 
   width:100%;
   height:100%;
 
   display:flex;
+
   flex-direction:column;
 
   justify-content:center;
@@ -35,6 +37,7 @@ body{
   color:white;
 
   z-index:20;
+
 }
 
 #gameOver{
@@ -42,14 +45,17 @@ body{
 }
 
 h1{
+
   font-size:80px;
 
   color:#00e5ff;
 
   text-shadow:0 0 30px #00e5ff;
+
 }
 
 button{
+
   padding:15px 40px;
 
   border:none;
@@ -65,13 +71,17 @@ button{
   cursor:pointer;
 
   transition:0.2s;
+
 }
 
 button:hover{
-  transform:scale(1.1);
+
+  transform:scale(1.08);
+
 }
 
 #hud{
+
   position:fixed;
 
   top:10px;
@@ -86,23 +96,31 @@ button:hover{
   color:white;
 
   z-index:10;
+
 }
 
 #stats{
+
   display:flex;
+
   gap:20px;
 
   font-size:24px;
+
 }
 
 #cooldowns{
+
   display:flex;
+
   flex-direction:column;
 
   gap:10px;
+
 }
 
 .bar{
+
   width:200px;
   height:15px;
 
@@ -111,28 +129,32 @@ button:hover{
   border-radius:20px;
 
   overflow:hidden;
+
 }
 
 .bar div{
-  height:100%;
 
   width:100%;
+  height:100%;
 
   background:#00e5ff;
+
 }
 
 #minimap{
+
   position:fixed;
 
   top:20px;
   right:20px;
 
-  width:160px;
-  height:160px;
+  width:180px;
+  height:180px;
 
   background:rgba(0,0,0,0.5);
 
   border:2px solid #00e5ff;
 
   z-index:20;
+
 }

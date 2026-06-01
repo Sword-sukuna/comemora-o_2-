@@ -1,15 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arena Rush Roguelike</title>
+
+  <meta name="viewport"
+  content="width=device-width, initial-scale=1.0">
+
+  <title>Arena Rush</title>
 
   <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
 
   <!-- MENU -->
+
   <div id="menu">
 
     <h1>ARENA RUSH</h1>
@@ -24,7 +30,9 @@
 
   </div>
 
+
   <!-- GAME OVER -->
+
   <div id="gameOver">
 
     <h1>YOU DIED</h1>
@@ -37,47 +45,69 @@
 
   </div>
 
+
   <!-- HUD -->
+
   <div id="hud">
 
     <div id="stats">
 
       <span id="life"></span>
+
       <span id="souls"></span>
+
       <span id="floor"></span>
+
       <span id="room"></span>
 
     </div>
 
     <div id="cooldowns">
 
-      <div>E
+      <div>
+
+        E
+
         <div class="bar">
           <div id="barE"></div>
         </div>
+
       </div>
 
-      <div>Q
+      <div>
+
+        Q
+
         <div class="bar">
           <div id="barQ"></div>
         </div>
+
       </div>
 
-      <div>1
+      <div>
+
+        1
+
         <div class="bar">
           <div id="bar1"></div>
         </div>
+
       </div>
 
     </div>
 
   </div>
 
+
   <!-- MINIMAPA -->
+
   <canvas id="minimap"></canvas>
 
+
   <!-- GAME -->
+
   <canvas id="game"></canvas>
+
 
   <script src="script.js"></script>
 

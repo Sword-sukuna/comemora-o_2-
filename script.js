@@ -7,17 +7,41 @@ canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
+
+// minimapa
+
 const minimap =
 document.getElementById("minimap");
 
 const mini =
 minimap.getContext("2d");
 
-minimap.width = 160;
-minimap.height = 160;
+minimap.width = 180;
+minimap.height = 180;
 
-const hud =
-document.getElementById("hud");
+
+// HUD
+
+const lifeText =
+document.getElementById("life");
+
+const soulsText =
+document.getElementById("souls");
+
+const floorText =
+document.getElementById("floor");
+
+const roomText =
+document.getElementById("room");
+
+const barE =
+document.getElementById("barE");
+
+const barQ =
+document.getElementById("barQ");
+
+const bar1 =
+document.getElementById("bar1");
 
 const menu =
 document.getElementById("menu");
@@ -28,10 +52,13 @@ document.getElementById("gameOver");
 const finalText =
 document.getElementById("finalText");
 
+
+// PLAYER
+
 const player = {
 
-  x:500,
-  y:400,
+  x: canvas.width / 2,
+  y: canvas.height / 2,
 
   size:35,
 
@@ -50,23 +77,29 @@ const player = {
   dashCooldown:0,
   skillCooldown:0,
 
-  attacking:false
+  attacking:false,
+  usingSkill:false
+
 };
+
+
+// GAME
 
 let keys = {};
 
 let gameStarted = false;
+
+let screenShake = 0;
+
+let transitionAlpha = 0;
 
 let currentRoomX = 1;
 let currentRoomY = 1;
 
 let floor = 1;
 
-let transition = 0;
 
-let screenShake = 0;
-
-const ROOM_SIZE = 2200;
+// ROOMS
 
 const rooms = [];
 
@@ -78,11 +111,15 @@ for(let y=0;y<3;y++){
 
     rooms[y][x] = {
 
+      type:"combat",
+
       visited:false,
 
       cleared:false,
 
-      type:"combat",
+      generated:false,
+
+      used:false,
 
       enemies:[],
 
@@ -100,66 +137,15 @@ for(let y=0;y<3;y++){
 }
 
 rooms[1][1].type = "spawn";
+
 rooms[0][2].type = "boss";
+
 rooms[2][0].type = "save";
+
 rooms[2][2].type = "upgrade";
 
-function getCurrentRoom(){
 
-  return rooms[currentRoomY][currentRoomX];
-
-}
-
-function generateEnemies(room){
-
-  if(room.generated) return;
-
-  room.generated = true;
-
-  if(
-    room.type === "spawn" ||
-    room.type === "save" ||
-    room.type === "upgrade"
-  ) return;
-
-  let amount = 5;
-
-  if(room.type === "boss"){
-    amount = 1;
-  }
-
-  for(let i=0;i<amount;i++){
-
-    room.enemies.push({
-
-      x:Math.random()*1600+300,
-      y:Math.random()*1000+200,
-
-      size:room.type === "boss"
-      ? 100
-      : 35,
-
-      speed:room.type === "boss"
-      ? 1.5
-      : 2.2,
-
-      damage:room.type === "boss"
-      ? 2
-      : 1,
-
-      life:room.type === "boss"
-      ? 30
-      : 3,
-
-      color:room.type === "boss"
-      ? "#ff9900"
-      : "#ff0044"
-
-    });
-
-  }
-
-}
+// CONTROLES
 
 document.addEventListener("keydown",e=>{
 
@@ -178,28 +164,7 @@ document.addEventListener("keydown",e=>{
   }
 
   if(e.key.toLowerCase() === "f"){
-
-    let room = getCurrentRoom();
-
-    if(room.type === "save"){
-
-      saveGame();
-
-    }
-
-    if(room.type === "upgrade"){
-
-      player.damage += 1;
-
-      player.maxLife += 2;
-
-      player.life =
-      player.maxLife;
-
-      room.used = true;
-
-    }
-
+    interact();
   }
 
 });
@@ -210,21 +175,26 @@ document.addEventListener("keyup",e=>{
 
 });
 
+
+// START
+
 function startGame(){
 
   menu.style.display = "none";
 
   canvas.style.display = "block";
 
-  hud.style.display = "flex";
+  document.getElementById("hud")
+  .style.display = "flex";
 
   gameStarted = true;
 
-  generateEnemies(
-    getCurrentRoom()
-  );
+  generateEnemies(getRoom());
 
 }
+
+
+// SAVE
 
 function saveGame(){
 
@@ -235,9 +205,11 @@ function saveGame(){
 
       life:player.life,
 
-      souls:player.souls,
+      maxLife:player.maxLife,
 
       damage:player.damage,
+
+      souls:player.souls,
 
       floor,
 
@@ -261,9 +233,11 @@ function loadSave(){
 
     player.life = save.life;
 
-    player.souls = save.souls;
+    player.maxLife = save.maxLife;
 
     player.damage = save.damage;
+
+    player.souls = save.souls;
 
     floor = save.floor;
 
@@ -279,16 +253,91 @@ function loadSave(){
 
 }
 
+
+// ROOM
+
+function getRoom(){
+
+  return rooms[currentRoomY][currentRoomX];
+
+}
+
+function generateEnemies(room){
+
+  if(room.generated) return;
+
+  room.generated = true;
+
+  if(
+    room.type === "spawn" ||
+    room.type === "save" ||
+    room.type === "upgrade"
+  ){
+    return;
+  }
+
+  let amount = 6;
+
+  if(room.type === "boss"){
+    amount = 1;
+  }
+
+  for(let i=0;i<amount;i++){
+
+    room.enemies.push({
+
+      x:Math.random() *
+      (canvas.width - 200) + 100,
+
+      y:Math.random() *
+      (canvas.height - 200) + 100,
+
+      size:
+      room.type === "boss"
+      ? 100
+      : 35,
+
+      speed:
+      room.type === "boss"
+      ? 1.5
+      : 2.2,
+
+      damage:
+      room.type === "boss"
+      ? 2
+      : 1,
+
+      life:
+      room.type === "boss"
+      ? 25
+      : 3,
+
+      color:
+      room.type === "boss"
+      ? "#ff9900"
+      : "#ff0044"
+
+    });
+
+  }
+
+}
+
+
+// ATAQUE
+
 function attack(){
 
   if(player.attackCooldown > 0)
   return;
 
-  player.attackCooldown = 25;
+  player.attackCooldown = 20;
 
   player.attacking = true;
 
   damageEnemies(100,player.damage);
+
+  screenShake = 5;
 
   setTimeout(()=>{
 
@@ -298,12 +347,15 @@ function attack(){
 
 }
 
+
+// DASH
+
 function dash(){
 
   if(player.dashCooldown > 0)
   return;
 
-  player.dashCooldown = 100;
+  player.dashCooldown = 80;
 
   let dx = 0;
   let dy = 0;
@@ -313,41 +365,51 @@ function dash(){
   if(keys["a"]) dx = -1;
   if(keys["d"]) dx = 1;
 
-  player.x += dx * 220;
-  player.y += dy * 220;
+  player.x += dx * 140;
+  player.y += dy * 140;
 
   screenShake = 10;
 
 }
+
+
+// SKILL
 
 function skill(){
 
   if(player.skillCooldown > 0)
   return;
 
-  player.skillCooldown = 300;
+  player.skillCooldown = 240;
 
-  damageEnemies(220,6);
+  player.usingSkill = true;
 
-  screenShake = 20;
+  damageEnemies(220,5);
+
+  screenShake = 15;
+
+  setTimeout(()=>{
+
+    player.usingSkill = false;
+
+  },300);
 
 }
 
+
+// DAMAGE
+
 function damageEnemies(range,damage){
 
-  const room =
-  getCurrentRoom();
+  const room = getRoom();
 
   room.enemies.forEach(enemy=>{
 
-    const dx =
-    enemy.x-player.x;
-
-    const dy =
-    enemy.y-player.y;
+    const dx = enemy.x - player.x;
+    const dy = enemy.y - player.y;
 
     const dist =
-    Math.sqrt(dx*dx+dy*dy);
+    Math.sqrt(dx*dx + dy*dy);
 
     if(dist < range){
 
@@ -373,124 +435,177 @@ function damageEnemies(range,damage){
 
 }
 
-function changeRoom(dir){
 
-  transition = 1;
+// INTERAÇÃO
 
-  setTimeout(()=>{
+function interact(){
 
-    if(dir === "right")
-    currentRoomX++;
+  const room = getRoom();
 
-    if(dir === "left")
-    currentRoomX--;
+  if(room.type === "save"){
 
-    if(dir === "top")
-    currentRoomY--;
+    saveGame();
 
-    if(dir === "bottom")
-    currentRoomY++;
+  }
 
-    generateEnemies(
-      getCurrentRoom()
-    );
+  if(
+    room.type === "upgrade" &&
+    !room.used
+  ){
 
-    if(dir === "right"){
-      player.x = 100;
-    }
+    room.used = true;
 
-    if(dir === "left"){
-      player.x = ROOM_SIZE-100;
-    }
+    player.damage += 1;
 
-    if(dir === "top"){
-      player.y = ROOM_SIZE-100;
-    }
+    player.maxLife += 2;
 
-    if(dir === "bottom"){
-      player.y = 100;
-    }
+    player.life =
+    player.maxLife;
 
-    transition = 0;
-
-  },300);
+  }
 
 }
 
+
+// ROOM CHANGE
+
+function changeRoom(direction){
+
+  transitionAlpha = 1;
+
+  setTimeout(()=>{
+
+    if(direction === "right"){
+
+      currentRoomX++;
+
+      player.x = 80;
+
+    }
+
+    if(direction === "left"){
+
+      currentRoomX--;
+
+      player.x =
+      canvas.width - 120;
+
+    }
+
+    if(direction === "top"){
+
+      currentRoomY--;
+
+      player.y =
+      canvas.height - 120;
+
+    }
+
+    if(direction === "bottom"){
+
+      currentRoomY++;
+
+      player.y = 80;
+
+    }
+
+    generateEnemies(getRoom());
+
+    transitionAlpha = 0;
+
+  },250);
+
+}
+
+
+// UPDATE
+
 function update(){
 
-  const room =
-  getCurrentRoom();
+  const room = getRoom();
 
   room.visited = true;
 
-  let moveX = 0;
-  let moveY = 0;
+  // MOVIMENTO
 
-  if(keys["w"]) moveY -= player.speed;
-  if(keys["s"]) moveY += player.speed;
-  if(keys["a"]) moveX -= player.speed;
-  if(keys["d"]) moveX += player.speed;
+  if(keys["w"])
+  player.y -= player.speed;
 
-  player.x += moveX;
-  player.y += moveY;
+  if(keys["s"])
+  player.y += player.speed;
+
+  if(keys["a"])
+  player.x -= player.speed;
+
+  if(keys["d"])
+  player.x += player.speed;
+
+  // LIMITES
+
+  player.x = Math.max(
+    20,
+    Math.min(
+      canvas.width - 55,
+      player.x
+    )
+  );
+
+  player.y = Math.max(
+    20,
+    Math.min(
+      canvas.height - 55,
+      player.y
+    )
+  );
 
   // PORTAS
 
-  if(
-    room.enemies.length <= 0
-  ){
+  if(room.enemies.length <= 0){
 
     room.cleared = true;
 
     if(
-      player.x > ROOM_SIZE-30 &&
+      player.x >= canvas.width - 60 &&
       room.doors.right
     ){
-
       changeRoom("right");
-
     }
 
     if(
-      player.x < 30 &&
+      player.x <= 20 &&
       room.doors.left
     ){
-
       changeRoom("left");
-
     }
 
     if(
-      player.y < 30 &&
+      player.y <= 20 &&
       room.doors.top
     ){
-
       changeRoom("top");
-
     }
 
     if(
-      player.y > ROOM_SIZE-30 &&
+      player.y >= canvas.height - 60 &&
       room.doors.bottom
     ){
-
       changeRoom("bottom");
-
     }
 
   }
 
+  // ENEMIES
+
   room.enemies.forEach(enemy=>{
 
     const dx =
-    player.x-enemy.x;
+    player.x - enemy.x;
 
     const dy =
-    player.y-enemy.y;
+    player.y - enemy.y;
 
     const dist =
-    Math.sqrt(dx*dx+dy*dy);
+    Math.sqrt(dx*dx + dy*dy);
 
     enemy.x +=
     (dx/dist) * enemy.speed;
@@ -498,15 +613,18 @@ function update(){
     enemy.y +=
     (dy/dist) * enemy.speed;
 
-    if(dist < 50){
+    if(dist < enemy.size){
 
-      player.life -= enemy.damage;
+      player.life -=
+      enemy.damage * 0.02;
 
-      screenShake = 10;
+      screenShake = 5;
 
     }
 
   });
+
+  // COOLDOWNS
 
   if(player.attackCooldown > 0)
   player.attackCooldown--;
@@ -516,6 +634,8 @@ function update(){
 
   if(player.skillCooldown > 0)
   player.skillCooldown--;
+
+  // GAME OVER
 
   if(player.life <= 0){
 
@@ -533,42 +653,42 @@ function update(){
 
 }
 
+
+// HUD
+
 function updateHUD(){
 
-  document.getElementById("life")
-  .innerText =
-  `❤️ ${player.life}/${player.maxLife}`;
+  lifeText.innerText =
+  `❤️ ${Math.floor(player.life)}
+  /${player.maxLife}`;
 
-  document.getElementById("souls")
-  .innerText =
+  soulsText.innerText =
   `💎 ${player.souls}`;
 
-  document.getElementById("floor")
-  .innerText =
+  floorText.innerText =
   `🏰 Floor ${floor}`;
 
-  document.getElementById("room")
-  .innerText =
+  roomText.innerText =
   `🚪 ${currentRoomX},
   ${currentRoomY}`;
 
-  document.getElementById("barE")
-  .style.width =
-  `${100-(player.attackCooldown/25)*100}%`;
+  barE.style.width =
+  `${100-(player.attackCooldown/20)*100}%`;
 
-  document.getElementById("barQ")
-  .style.width =
-  `${100-(player.dashCooldown/100)*100}%`;
+  barQ.style.width =
+  `${100-(player.dashCooldown/80)*100}%`;
 
-  document.getElementById("bar1")
-  .style.width =
-  `${100-(player.skillCooldown/300)*100}%`;
+  bar1.style.width =
+  `${100-(player.skillCooldown/240)*100}%`;
 
 }
 
-function drawMinimap(){
 
-  mini.clearRect(0,0,160,160);
+// MINIMAPA
+
+function drawMiniMap(){
+
+  mini.clearRect(0,0,180,180);
 
   for(let y=0;y<3;y++){
 
@@ -591,10 +711,10 @@ function drawMinimap(){
         mini.fillStyle = "#ffff00";
 
         mini.fillRect(
-          x*50+10,
-          y*50+10,
-          40,
-          40
+          x*55+10,
+          y*55+10,
+          45,
+          45
         );
 
       }
@@ -606,13 +726,16 @@ function drawMinimap(){
   mini.fillStyle = "#00e5ff";
 
   mini.fillRect(
-    currentRoomX*50+10,
-    currentRoomY*50+10,
-    40,
-    40
+    currentRoomX*55+10,
+    currentRoomY*55+10,
+    45,
+    45
   );
 
 }
+
+
+// DRAW
 
 function draw(){
 
@@ -635,10 +758,9 @@ function draw(){
     canvas.height
   );
 
-  const room =
-  getCurrentRoom();
+  const room = getRoom();
 
-  // TEMAS
+  // TEMA
 
   if(room.type === "boss"){
 
@@ -654,7 +776,7 @@ function draw(){
 
   }else{
 
-    ctx.fillStyle = "#0a0a15";
+    ctx.fillStyle = "#0a0a18";
 
   }
 
@@ -749,7 +871,7 @@ function draw(){
     ctx.arc(
       canvas.width/2,
       canvas.height/2,
-      40,
+      45,
       0,
       Math.PI*2
     );
@@ -772,15 +894,15 @@ function draw(){
     ctx.fillStyle = "#ffff00";
 
     ctx.fillRect(
-      canvas.width/2-40,
-      canvas.height/2-40,
+      canvas.width/2 - 40,
+      canvas.height/2 - 40,
       80,
       80
     );
 
   }
 
-  // inimigos
+  // ENEMIES
 
   room.enemies.forEach(enemy=>{
 
@@ -791,15 +913,15 @@ function draw(){
     ctx.fillStyle = enemy.color;
 
     ctx.fillRect(
-      enemy.x-player.x+canvas.width/2,
-      enemy.y-player.y+canvas.height/2,
+      enemy.x,
+      enemy.y,
       enemy.size,
       enemy.size
     );
 
   });
 
-  // player
+  // PLAYER
 
   ctx.shadowBlur = 25;
 
@@ -808,40 +930,62 @@ function draw(){
   ctx.fillStyle = player.color;
 
   ctx.fillRect(
-    canvas.width/2-player.size/2,
-    canvas.height/2-player.size/2,
+    player.x,
+    player.y,
     player.size,
     player.size
   );
 
-  // ataque
+  // ATAQUE
 
   if(player.attacking){
 
     ctx.beginPath();
 
-    ctx.strokeStyle = "#fff";
+    ctx.strokeStyle = "#ffffff";
 
     ctx.lineWidth = 8;
 
     ctx.arc(
-      canvas.width/2,
-      canvas.height/2,
+      player.x + player.size/2,
+      player.y + player.size/2,
       70,
       0,
-      Math.PI*1.5
+      Math.PI * 1.5
     );
 
     ctx.stroke();
 
   }
 
-  // fade transição
+  // SKILL
 
-  if(transition > 0){
+  if(player.usingSkill){
+
+    ctx.beginPath();
+
+    ctx.strokeStyle = "#00ffff";
+
+    ctx.lineWidth = 15;
+
+    ctx.arc(
+      player.x + player.size/2,
+      player.y + player.size/2,
+      160,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.stroke();
+
+  }
+
+  // TRANSIÇÃO
+
+  if(transitionAlpha > 0){
 
     ctx.fillStyle =
-    `rgba(0,0,0,${transition})`;
+    `rgba(0,0,0,${transitionAlpha})`;
 
     ctx.fillRect(
       0,
@@ -854,9 +998,12 @@ function draw(){
 
   ctx.restore();
 
-  drawMinimap();
+  drawMiniMap();
 
 }
+
+
+// LOOP
 
 function gameLoop(){
 
