@@ -258,6 +258,13 @@ function loadSave(){
 
 function getRoom(){
 
+  if(
+    !rooms[currentRoomY] ||
+    !rooms[currentRoomY][currentRoomX]
+  ){
+    return null;
+  }
+
   return rooms[currentRoomY][currentRoomX];
 
 }
@@ -403,7 +410,9 @@ function damageEnemies(range,damage){
 
   const room = getRoom();
 
-  room.enemies.forEach(enemy=>{
+if(!room) return;
+
+room.enemies.forEach(enemy=>{
 
     const dx = enemy.x - player.x;
     const dy = enemy.y - player.y;
@@ -475,41 +484,65 @@ function changeRoom(direction){
 
   setTimeout(()=>{
 
+    // RIGHT
     if(direction === "right"){
 
-      currentRoomX++;
+      if(currentRoomX < 2){
 
-      player.x = 80;
+        currentRoomX++;
+
+        player.x = 80;
+
+      }
 
     }
 
+    // LEFT
     if(direction === "left"){
 
-      currentRoomX--;
+      if(currentRoomX > 0){
 
-      player.x =
-      canvas.width - 120;
+        currentRoomX--;
+
+        player.x = canvas.width - 120;
+
+      }
 
     }
 
+    // TOP
     if(direction === "top"){
 
-      currentRoomY--;
+      if(currentRoomY > 0){
 
-      player.y =
-      canvas.height - 120;
+        currentRoomY--;
+
+        player.y = canvas.height - 120;
+
+      }
 
     }
 
+    // BOTTOM
     if(direction === "bottom"){
 
-      currentRoomY++;
+      if(currentRoomY < 2){
 
-      player.y = 80;
+        currentRoomY++;
+
+        player.y = 80;
+
+      }
 
     }
 
-    generateEnemies(getRoom());
+    const room = getRoom();
+
+    if(room){
+
+      generateEnemies(room);
+
+    }
 
     transitionAlpha = 0;
 
@@ -524,7 +557,9 @@ function update(){
 
   const room = getRoom();
 
-  room.visited = true;
+if(!room) return;
+
+room.visited = true;
 
   // MOVIMENTO
 
