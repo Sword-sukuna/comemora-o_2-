@@ -122,6 +122,8 @@ let isTransitioning = false;
 
 let walls = [];
 
+let bullets = [];
+
 // ROOMS
 
 const rooms = [];
@@ -173,6 +175,10 @@ rooms[0][0].type = "shop";
 // CONTROLES
 
 document.addEventListener("keydown",e=>{
+
+    if(e.key === "2"){
+  spinAttack();
+}
 
   keys[e.key.toLowerCase()] = true;
 
@@ -311,15 +317,64 @@ function generateEnemies(room){
     return;
   }
 
-  let amount = 6;
+  let amount = 6 + floor;
 
   if(room.type === "boss"){
     amount = 1;
   }
 
+  const enemyTypes = [
+
+    {
+      type:"chaser",
+      color:"#ff0044",
+      life:4 + floor,
+      speed:2.8,
+      damage:1,
+      size:35
+    },
+
+    {
+      type:"tank",
+      color:"#9922ff",
+      life:14 + floor*2,
+      speed:1.2,
+      damage:2,
+      size:55
+    },
+
+    {
+      type:"runner",
+      color:"#00ffcc",
+      life:2,
+      speed:5,
+      damage:1,
+      size:25
+    },
+
+    {
+      type:"shooter",
+      color:"#ffaa00",
+      life:3,
+      speed:1.8,
+      damage:1,
+      size:30
+    }
+
+  ];
+
   for(let i=0;i<amount;i++){
 
+    const base =
+    enemyTypes[
+      Math.floor(
+        Math.random() * enemyTypes.length
+      )
+    ];
+
     room.enemies.push({
+
+      type:base.type,
 
       x:Math.random() *
       (canvas.width - 200) + 100,
@@ -327,35 +382,19 @@ function generateEnemies(room){
       y:Math.random() *
       (canvas.height - 200) + 100,
 
-      size:
-      room.type === "boss"
-      ? 100
-      : 35,
+      size:base.size,
 
-      speed:
-      room.type === "boss"
-      ? 1.5
-      : 2.2,
+      speed:base.speed,
 
-      damage:
-      room.type === "boss"
-      ? 2
-      : 1,
+      damage:base.damage,
 
-      life:
-      room.type === "boss"
-      ? 25
-      : 3,
+      life:base.life,
 
-      maxLife:
-room.type === "boss"
-? 25
-: 3,
+      maxLife:base.life,
 
-      color:
-      room.type === "boss"
-      ? "#ff9900"
-      : "#ff0044"
+      color:base.color,
+
+      shootCooldown:100
 
     });
 
@@ -371,7 +410,7 @@ function attack(){
   if(player.attackCooldown > 0)
   return;
 
-  player.attackCooldown = 20;
+  player.attackCooldown = 35;
 
   player.attacking = true;
 
@@ -395,7 +434,7 @@ function dash(){
   if(player.dashCooldown > 0)
   return;
 
-  player.dashCooldown = 80;
+  player.dashCooldown = 180;
 
   let dx = 0;
   let dy = 0;
@@ -448,11 +487,11 @@ function skill(){
   if(player.skillCooldown > 0)
   return;
 
-  player.skillCooldown = 240;
+  player.skillCooldown = 300;
 
   player.usingSkill = true;
 
-  damageEnemies(220,5);
+  damageEnemies(150,2);
 
   screenShake = 15;
 
@@ -582,7 +621,7 @@ function interact(){
 
       room.used = true;
 
-      player.damage += 1;
+      player.damage += 0.5;
 
       player.maxLife += 2;
 
@@ -697,6 +736,46 @@ if(!room) return;
 
 room.visited = true;
 
+// BALAS
+
+for(let i = bullets.length-1; i>=0; i--){
+
+  const bullet = bullets[i];
+
+  bullet.x += bullet.vx;
+  bullet.y += bullet.vy;
+
+  if(
+    bullet.x < -50 ||
+    bullet.x > canvas.width + 50 ||
+    bullet.y < -50 ||
+    bullet.y > canvas.height + 50
+  ){
+    bullets.splice(i,1);
+    continue;
+  }
+
+  const dx =
+  player.x - bullet.x;
+
+  const dy =
+  player.y - bullet.y;
+
+  const dist =
+  Math.sqrt(dx*dx + dy*dy);
+
+  if(dist < 25){
+
+    player.life -= bullet.damage;
+
+    bullets.splice(i,1);
+
+    screenShake = 8;
+
+  }
+
+}
+
   // MOVIMENTO
 
   if(keys["w"])
@@ -803,11 +882,72 @@ Math.max(
   Math.sqrt(dx*dx + dy*dy)
 );
 
-  enemy.x +=
-  (dx/dist) * enemy.speed;
+  if(enemy.type === "runner"){
 
-  enemy.y +=
-  (dy/dist) * enemy.speed;
+  enemy.x += (dx/dist) * enemy.speed * 1.4;
+  enemy.y += (dy/dist) * enemy.speed * 1.4;
+
+}
+else if(enemy.type === "tank"){
+
+  enemy.x += (dx/dist) * enemy.speed * 0.7;
+  enemy.y += (dy/dist) * enemy.speed * 0.7;
+
+}
+else if(enemy.type === "shooter"){
+
+  if(dist > 260){
+
+    enemy.x += (dx/dist) * enemy.speed;
+    enemy.y += (dy/dist) * enemy.speed;
+
+  }
+
+}
+else{
+
+  enemy.x += (dx/dist) * enemy.speed;
+  enemy.y += (dy/dist) * enemy.speed;
+
+}
+
+  // SHOOTER
+
+  if(enemy.type === "shooter"){
+
+  enemy.shootCooldown--;
+
+  if(enemy.shootCooldown <= 0){
+
+    enemy.shootCooldown = 120;
+
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
+
+    const dist =
+    Math.sqrt(dx*dx + dy*dy);
+
+    bullets.push({
+
+      x:enemy.x,
+      y:enemy.y,
+
+      vx:(dx/dist)*6,
+      vy:(dy/dist)*6,
+
+      size:12,
+
+      damage:1.5
+
+    });
+
+  }
+{
+  bullets.splice(i,1);
+  continue;
+}
+
+}
 
   // colisão parede inimigo
 
@@ -987,6 +1127,26 @@ function draw(){
   );
 
   const room = getRoom();
+
+  // BALAS
+
+  bullets.forEach(bullet=>{
+
+  ctx.fillStyle = "#ffcc00";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    bullet.x,
+    bullet.y,
+    bullet.size,
+    0,
+    Math.PI*2
+  );
+
+  ctx.fill();
+
+});
 
   // TEMA
 
@@ -1387,5 +1547,69 @@ function generateWalls(){
     });
 
   }
+
+}
+
+//skill nova
+
+function spinAttack(){
+
+  if(player.spinCooldown > 0)
+  return;
+
+  player.spinCooldown = 300;
+
+  for(let i=0;i<8;i++){
+
+    setTimeout(()=>{
+
+      damageEnemies(140,2);
+
+      screenShake = 8;
+
+    },i*120);
+
+  }
+
+}
+
+player.spinCooldown = 0;
+
+floor++;
+resetMap();
+
+// rest map 
+
+function resetMap(){
+
+  for(let y=0;y<3;y++){
+
+    for(let x=0;x<3;x++){
+
+      rooms[y][x].visited = false;
+
+      rooms[y][x].cleared = false;
+
+      rooms[y][x].generated = false;
+
+      rooms[y][x].used = false;
+
+      rooms[y][x].enemies = [];
+
+    }
+
+  }
+
+  currentRoomX = 1;
+  currentRoomY = 1;
+
+  player.x = canvas.width/2;
+  player.y = canvas.height/2;
+
+  bullets = [];
+
+  generateEnemies(getRoom());
+
+  generateWalls();
 
 }
