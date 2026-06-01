@@ -82,6 +82,26 @@ const player = {
 
 };
 
+// VIDA PLAYER
+
+ctx.fillStyle = "#111";
+
+ctx.fillRect(
+  player.x - 10,
+  player.y - 20,
+  60,
+  8
+);
+
+ctx.fillStyle = "#00ff88";
+
+ctx.fillRect(
+  player.x - 10,
+  player.y - 20,
+  (player.life / player.maxLife) * 60,
+  8
+);
+
 
 // GAME
 
@@ -100,6 +120,7 @@ let floor = 1;
 
 let isTransitioning = false;
 
+let walls = [];
 
 // ROOMS
 
@@ -145,6 +166,8 @@ rooms[0][2].type = "boss";
 rooms[2][0].type = "save";
 
 rooms[2][2].type = "upgrade";
+
+rooms[0][0].type = "shop";
 
 
 // CONTROLES
@@ -192,6 +215,8 @@ function startGame(){
   gameStarted = true;
 
   generateEnemies(getRoom());
+
+  generateWalls();
 
 }
 
@@ -280,7 +305,8 @@ function generateEnemies(room){
   if(
     room.type === "spawn" ||
     room.type === "save" ||
-    room.type === "upgrade"
+    room.type === "upgrade"||
+    room.type === "shop"
   ){
     return;
   }
@@ -320,6 +346,11 @@ function generateEnemies(room){
       room.type === "boss"
       ? 25
       : 3,
+
+      maxLife:
+room.type === "boss"
+? 25
+: 3,
 
       color:
       room.type === "boss"
@@ -377,7 +408,35 @@ function dash(){
   player.x += dx * 140;
   player.y += dy * 140;
 
+  walls.forEach(wall=>{
+
+  if(
+
+    player.x < wall.x + wall.width &&
+    player.x + player.size > wall.x &&
+    player.y < wall.y + wall.height &&
+    player.y + player.size > wall.y
+
+  ){
+
+    player.x -= dx * 140;
+    player.y -= dy * 140;
+
+  }
+
+});
+
   screenShake = 10;
+
+  player.x = Math.max(
+  20,
+  Math.min(canvas.width-55,player.x)
+);
+
+player.y = Math.max(
+  20,
+  Math.min(canvas.height-55,player.y)
+);
 
 }
 
@@ -414,35 +473,41 @@ function damageEnemies(range,damage){
 
 if(!room) return;
 
-room.enemies.forEach(enemy=>{
+for(let i = room.enemies.length - 1; i >= 0; i--){
 
-    const dx = enemy.x - player.x;
-    const dy = enemy.y - player.y;
+  const enemy =
+  room.enemies[i];
 
-    const dist =
-    Math.sqrt(dx*dx + dy*dy);
+  const dx =
+  enemy.x - player.x;
 
-    if(dist < range){
+  const dy =
+  enemy.y - player.y;
 
-      enemy.life -= damage;
+  const dist =
+  Math.max(
+    1,
+    Math.sqrt(dx*dx + dy*dy)
+  );
 
-      if(enemy.life <= 0){
+  if(dist < range){
 
-        player.souls +=
-        enemy.size > 50
-        ? 50
-        : 10;
+    enemy.life -= damage;
 
-        room.enemies.splice(
-          room.enemies.indexOf(enemy),
-          1
-        );
+    if(enemy.life <= 0){
 
-      }
+      player.souls +=
+      enemy.size > 50
+      ? 50
+      : 10;
+
+      room.enemies.splice(i,1);
 
     }
 
-  });
+  }
+
+}
 
 }
 
@@ -454,6 +519,25 @@ function interact(){
   const room = getRoom();
 
   if(!room) return;
+
+  //SHOP
+
+  if(room.type === "shop"){
+
+  if(player.souls >= 50){
+
+    player.souls -= 50;
+
+    player.maxLife += 2;
+
+    player.life =
+    player.maxLife;
+
+    alert("+ VIDA");
+
+  }
+
+}
 
   // SAVE
 
@@ -586,6 +670,8 @@ function changeRoom(direction){
 
       generateEnemies(room);
 
+      generateWalls();
+
     }
 
     transitionAlpha = 0;
@@ -624,6 +710,28 @@ room.visited = true;
 
   if(keys["d"])
   player.x += player.speed;
+
+  //paredes
+
+  walls.forEach(wall=>{
+
+  if(
+
+    player.x < wall.x + wall.width &&
+    player.x + player.size > wall.x &&
+    player.y < wall.y + wall.height &&
+    player.y + player.size > wall.y
+
+  ){
+
+    if(keys["w"]) player.y += player.speed;
+    if(keys["s"]) player.y -= player.speed;
+    if(keys["a"]) player.x += player.speed;
+    if(keys["d"]) player.x -= player.speed;
+
+  }
+
+});
 
   // LIMITES
 
@@ -683,31 +791,57 @@ room.visited = true;
 
   room.enemies.forEach(enemy=>{
 
-    const dx =
-    player.x - enemy.x;
+  const dx =
+  player.x - enemy.x;
 
-    const dy =
-    player.y - enemy.y;
+  const dy =
+  player.y - enemy.y;
 
-    const dist =
-    Math.sqrt(dx*dx + dy*dy);
+  const dist =
+Math.max(
+  1,
+  Math.sqrt(dx*dx + dy*dy)
+);
 
-    enemy.x +=
-    (dx/dist) * enemy.speed;
+  enemy.x +=
+  (dx/dist) * enemy.speed;
 
-    enemy.y +=
-    (dy/dist) * enemy.speed;
+  enemy.y +=
+  (dy/dist) * enemy.speed;
 
-    if(dist < enemy.size){
+  // colisão parede inimigo
 
-      player.life -=
-      enemy.damage * 0.02;
+  walls.forEach(wall=>{
 
-      screenShake = 5;
+    if(
+
+      enemy.x < wall.x + wall.width &&
+      enemy.x + enemy.size > wall.x &&
+      enemy.y < wall.y + wall.height &&
+      enemy.y + enemy.size > wall.y
+
+    ){
+
+      enemy.x -=
+      (dx/dist) * enemy.speed;
+
+      enemy.y -=
+      (dy/dist) * enemy.speed;
 
     }
 
   });
+
+  if(dist < enemy.size){
+
+    player.life -=
+    enemy.damage * 0.02;
+
+    screenShake = 5;
+
+  }
+
+});
 
   // COOLDOWNS
 
@@ -881,6 +1015,42 @@ function draw(){
     canvas.height
   );
 
+
+   // SHOP
+  if(room.type === "shop"){
+
+  ctx.fillStyle = "#332200";
+
+  ctx.fillRect(
+    canvas.width/2 - 70,
+    canvas.height/2 - 70,
+    140,
+    140
+  );
+
+}
+
+  // partículas ambiente
+
+for(let i=0;i<40;i++){
+
+  ctx.fillStyle =
+  "rgba(255,255,255,0.03)";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    (i * 53) % canvas.width,
+    (i * 97) % canvas.height,
+    2,
+    0,
+    Math.PI*2
+  );
+
+  ctx.fill();
+
+}
+
   // GRID
 
   ctx.strokeStyle =
@@ -954,7 +1124,7 @@ function draw(){
 
   if(room.type === "save"){
 
-    ctx.shadowBlur = 30;
+    ctx.shadowBlur = 60;
 
     ctx.shadowColor = "#00ff88";
 
@@ -962,15 +1132,32 @@ function draw(){
 
     ctx.beginPath();
 
-    ctx.arc(
-      canvas.width/2,
-      canvas.height/2,
-      45,
-      0,
-      Math.PI*2
-    );
+ctx.fillStyle = "#00ff88";
 
-    ctx.fill();
+ctx.arc(
+  canvas.width/2,
+  canvas.height/2,
+  80,
+  0,
+  Math.PI*2
+);
+
+ctx.fill();
+
+ctx.fillStyle =
+"rgba(0,255,120,0.15)";
+
+ctx.beginPath();
+
+ctx.arc(
+  canvas.width/2,
+  canvas.height/2,
+  110,
+  0,
+  Math.PI*2
+);
+
+ctx.fill();
 
   }
 
@@ -996,6 +1183,21 @@ function draw(){
 
   }
 
+  //DESENHAR PAREDES
+
+  walls.forEach(wall=>{
+
+  ctx.fillStyle = "#2b2b2b";
+
+  ctx.fillRect(
+    wall.x,
+    wall.y,
+    wall.width,
+    wall.height
+  );
+
+});
+
   // ENEMIES
 
   room.enemies.forEach(enemy=>{
@@ -1006,14 +1208,43 @@ function draw(){
 
     ctx.fillStyle = enemy.color;
 
-    ctx.fillRect(
-      enemy.x,
-      enemy.y,
-      enemy.size,
-      enemy.size
-    );
+    ctx.beginPath();
+
+ctx.arc(
+  enemy.x + enemy.size/2,
+  enemy.y + enemy.size/2,
+  enemy.size/2,
+  0,
+  Math.PI*2
+);
+
+ctx.fill();
+
+    // VIDA FUNDO
+
+ctx.fillStyle = "#111";
+
+ctx.fillRect(
+  enemy.x,
+  enemy.y - 14,
+  enemy.size,
+  8
+);
+
+// VIDA
+
+ctx.fillStyle = "#00ff66";
+
+ctx.fillRect(
+  enemy.x,
+  enemy.y - 14,
+  (enemy.life / enemy.maxLife) * enemy.size,
+  8
+);
 
   });
+
+  
 
   // PLAYER
 
@@ -1023,12 +1254,17 @@ function draw(){
 
   ctx.fillStyle = player.color;
 
-  ctx.fillRect(
-    player.x,
-    player.y,
-    player.size,
-    player.size
-  );
+  ctx.beginPath();
+
+ctx.arc(
+  player.x + player.size/2,
+  player.y + player.size/2,
+  player.size/2,
+  0,
+  Math.PI*2
+);
+
+ctx.fill();
 
   // ATAQUE
 
@@ -1114,3 +1350,42 @@ function gameLoop(){
 }
 
 gameLoop();
+
+//paredes
+
+function generateWalls(){
+
+  walls = [];
+
+  const room = getRoom();
+
+  if(room.type === "combat"){
+
+    walls.push({
+      x:300,
+      y:200,
+      width:100,
+      height:400
+    });
+
+    walls.push({
+      x:700,
+      y:500,
+      width:350,
+      height:80
+    });
+
+  }
+
+  if(room.type === "boss"){
+
+    walls.push({
+      x:450,
+      y:250,
+      width:250,
+      height:250
+    });
+
+  }
+
+}
