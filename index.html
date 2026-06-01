@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arena Rush</title>
+  <title>Arena Rush Dungeon</title>
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -14,17 +14,39 @@
 
     <h1>ARENA RUSH</h1>
 
-    <button onclick="startGame()">
-      INICIAR
-    </button>
+    <div class="buttons">
 
-    <button onclick="loadGame()">
-      CARREGAR
-    </button>
+      <button onclick="startGame()">
+        INICIAR
+      </button>
 
-    <button>
-      CLASSES (EM BREVE)
-    </button>
+      <button onclick="loadGame()">
+        CONTINUAR
+      </button>
+
+    </div>
+
+    <div id="classSelect">
+
+      <h2>ESCOLHA SUA CLASSE</h2>
+
+      <div class="classes">
+
+        <button onclick="chooseClass('samurai')">
+          ⚔️ Samurai
+        </button>
+
+        <button onclick="chooseClass('rogue')">
+          🗡️ Rogue
+        </button>
+
+        <button onclick="chooseClass('mage')">
+          🔮 Mage
+        </button>
+
+      </div>
+
+    </div>
 
   </div>
 
@@ -33,10 +55,10 @@
 
     <h1>YOU DIED</h1>
 
-    <p id="finalScore"></p>
+    <p id="finalText"></p>
 
-    <button onclick="restartGame()">
-      RESTART
+    <button onclick="location.reload()">
+      MENU
     </button>
 
   </div>
@@ -45,22 +67,21 @@
   <div id="hud">
 
     <div id="topHud">
+
       <span id="life"></span>
-      <span id="wave"></span>
+      <span id="floor"></span>
+      <span id="room"></span>
       <span id="score"></span>
+
     </div>
 
     <div id="cooldowns">
 
-      <div>E <div class="bar"><div id="barE"></div></div></div>
+      <div>E<div class="bar"><div id="barE"></div></div></div>
 
-      <div>Q <div class="bar"><div id="barQ"></div></div></div>
+      <div>Q<div class="bar"><div id="barQ"></div></div></div>
 
-      <div>1 <div class="bar"><div id="bar1"></div></div></div>
-
-      <div>2 <div class="bar"><div id="bar2"></div></div></div>
-
-      <div>3 <div class="bar"><div id="bar3"></div></div></div>
+      <div>1<div class="bar"><div id="bar1"></div></div></div>
 
     </div>
 

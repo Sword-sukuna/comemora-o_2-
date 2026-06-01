@@ -7,20 +7,36 @@ canvas.height = window.innerHeight;
 const hud = document.getElementById("hud");
 
 const lifeText = document.getElementById("life");
-const waveText = document.getElementById("wave");
+const floorText = document.getElementById("floor");
+const roomText = document.getElementById("room");
 const scoreText = document.getElementById("score");
 
-const menu = document.getElementById("menu");
-const gameOverScreen =
+const finalText =
+document.getElementById("finalText");
+
+const menu =
+document.getElementById("menu");
+
+const gameOver =
 document.getElementById("gameOver");
 
-const finalScore =
-document.getElementById("finalScore");
+let gameStarted = false;
+
+let keys = {};
+
+let score = 0;
+
+let floor = 1;
+let room = 1;
+
+let screenShake = 0;
+
+let selectedClass = "samurai";
 
 const player = {
 
-  x: canvas.width/2,
-  y: canvas.height/2,
+  x:400,
+  y:300,
 
   size:35,
 
@@ -28,76 +44,71 @@ const player = {
 
   color:"#00e5ff",
 
-  life:10,
-
   damage:1,
 
-  attackCooldown:0,
-  skillCooldown:0,
-  explosionCooldown:0,
-  berserkCooldown:0,
-  dashCooldown:0,
+  maxLife:10,
+  life:10,
 
-  attacking:false,
-  usingSkill:false
+  attackCooldown:0,
+  dashCooldown:0,
+  skillCooldown:0,
+
+  attacking:false
 };
 
-let keys = {};
-
-let enemies = [];
-
-let score = 0;
-let wave = 1;
-
-let screenShake = 0;
-
-let gameStarted = false;
-
-const maps = [
+const dungeonRooms = [
 
   {
-    name:"LAVA",
-    bg:"#2a0000",
-    wall:"#3a3a3a",
+    type:"combat",
+
+    theme:"lava",
 
     walls:[
       {x:300,y:100,width:40,height:500},
       {x:700,y:0,width:40,height:400},
       {x:1000,y:200,width:40,height:500},
-    ]
+    ],
+
+    enemies:5
   },
 
   {
-    name:"CYBER",
-    bg:"#000a1f",
-    wall:"#0044ff",
+    type:"elite",
+
+    theme:"cyber",
 
     walls:[
       {x:200,y:200,width:700,height:40},
       {x:200,y:500,width:700,height:40},
       {x:500,y:200,width:40,height:340},
-    ]
+    ],
+
+    enemies:8
   },
 
   {
-    name:"VOID",
-    bg:"#12001f",
-    wall:"#6f00ff",
+    type:"treasure",
+
+    theme:"void",
 
     walls:[
       {x:150,y:150,width:40,height:600},
       {x:400,y:0,width:40,height:500},
       {x:700,y:250,width:40,height:500},
       {x:1000,y:100,width:40,height:600},
-    ]
+    ],
+
+    enemies:0
   }
 
 ];
 
-const currentMap =
-maps[Math.floor(Math.random()*maps.length)];
+let currentRoom =
+dungeonRooms[0];
 
-document.addEventListener("keydown", e => {
+let enemies = [];
+
+document.addEventListener("keydown",e=>{
 
   keys[e.key.toLowerCase()] = true;
 
@@ -107,29 +118,50 @@ document.addEventListener("keydown", e => {
     attack();
   }
 
-  if(e.key === "1"){
-    slash();
-  }
-
-  if(e.key === "2"){
-    explosion();
-  }
-
-  if(e.key === "3"){
-    berserk();
-  }
-
   if(e.key.toLowerCase() === "q"){
     dash();
   }
 
+  if(e.key === "1"){
+    skill();
+  }
+
 });
 
-document.addEventListener("keyup", e => {
+document.addEventListener("keyup",e=>{
 
   keys[e.key.toLowerCase()] = false;
 
 });
+
+function chooseClass(type){
+
+  selectedClass = type;
+
+  if(type === "samurai"){
+
+    player.damage = 2;
+    player.speed = 5;
+
+  }
+
+  if(type === "rogue"){
+
+    player.damage = 1;
+
+    player.speed = 8;
+
+  }
+
+  if(type === "mage"){
+
+    player.damage = 4;
+
+    player.speed = 4;
+
+  }
+
+}
 
 function startGame(){
 
@@ -141,95 +173,102 @@ function startGame(){
 
   gameStarted = true;
 
-  spawnWave();
-}
+  loadRoom();
 
-function restartGame(){
-  location.reload();
 }
 
 function saveGame(){
 
-  localStorage.setItem("arenaScore",score);
+  localStorage.setItem(
+    "arenaSave",
+
+    JSON.stringify({
+
+      score,
+      floor,
+      room,
+      selectedClass,
+      life:player.life
+
+    })
+
+  );
 
 }
 
 function loadGame(){
 
   const save =
-  localStorage.getItem("arenaScore");
+  JSON.parse(
+    localStorage.getItem("arenaSave")
+  );
 
   if(save){
 
-    score = parseInt(save);
+    score = save.score;
+
+    floor = save.floor;
+
+    room = save.room;
+
+    selectedClass =
+    save.selectedClass;
+
+    player.life = save.life;
 
   }
 
   startGame();
+
 }
 
-function spawnWave(){
+function loadRoom(){
 
-  for(let i=0;i<wave*3;i++){
+  enemies = [];
+
+  currentRoom =
+  dungeonRooms[
+    Math.floor(
+      Math.random() *
+      dungeonRooms.length
+    )
+  ];
+
+  for(let i=0;i<currentRoom.enemies;i++){
 
     spawnEnemy();
 
   }
 
-  if(wave % 5 === 0){
+}
 
-    enemies.push({
+function nextRoom(){
 
-      x:100,
-      y:100,
+  room++;
 
-      size:80,
+  if(room > 5){
 
-      speed:1,
+    floor++;
 
-      life:20,
-
-      damage:3,
-
-      boss:true,
-
-      color:"#ff9900",
-
-      knockbackX:0,
-      knockbackY:0
-    });
+    room = 1;
 
   }
+
+  saveGame();
+
+  loadRoom();
 
 }
 
 function spawnEnemy(){
 
-  let side =
-  Math.floor(Math.random()*4);
+  let x =
+  Math.random() *
+  canvas.width;
 
-  let x;
-  let y;
-
-  if(side === 0){
-    x = 0;
-    y = Math.random()*canvas.height;
-  }
-
-  if(side === 1){
-    x = canvas.width;
-    y = Math.random()*canvas.height;
-  }
-
-  if(side === 2){
-    x = Math.random()*canvas.width;
-    y = 0;
-  }
-
-  if(side === 3){
-    x = Math.random()*canvas.width;
-    y = canvas.height;
-  }
+  let y =
+  Math.random() *
+  canvas.height;
 
   enemies.push({
 
@@ -244,13 +283,13 @@ function spawnEnemy(){
 
     damage:1,
 
-    boss:false,
-
     color:"#ff0044",
 
     knockbackX:0,
     knockbackY:0
+
   });
+
 }
 
 function attack(){
@@ -265,61 +304,11 @@ function attack(){
   damageEnemies(100,player.damage);
 
   setTimeout(()=>{
+
     player.attacking = false;
+
   },100);
 
-}
-
-function slash(){
-
-  if(player.skillCooldown > 0)
-  return;
-
-  player.skillCooldown = 300;
-
-  player.usingSkill = true;
-
-  damageEnemies(180,5);
-
-  setTimeout(()=>{
-    player.usingSkill = false;
-  },300);
-}
-
-function explosion(){
-
-  if(player.explosionCooldown > 0)
-  return;
-
-  player.explosionCooldown = 500;
-
-  damageEnemies(260,10);
-
-  screenShake = 20;
-}
-
-function berserk(){
-
-  if(player.berserkCooldown > 0)
-  return;
-
-  player.berserkCooldown = 900;
-
-  player.damage = 4;
-
-  player.speed = 8;
-
-  player.color = "#ff2222";
-
-  setTimeout(()=>{
-
-    player.damage = 1;
-
-    player.speed = 5;
-
-    player.color = "#00e5ff";
-
-  },5000);
 }
 
 function dash(){
@@ -337,18 +326,35 @@ function dash(){
   if(keys["a"]) dx = -1;
   if(keys["d"]) dx = 1;
 
-  player.x += dx * 180;
-  player.y += dy * 180;
+  player.x += dx * 200;
+  player.y += dy * 200;
 
   screenShake = 10;
+
+}
+
+function skill(){
+
+  if(player.skillCooldown > 0)
+  return;
+
+  player.skillCooldown = 300;
+
+  damageEnemies(220,6);
+
+  screenShake = 20;
+
 }
 
 function damageEnemies(range,damage){
 
   enemies.forEach(enemy=>{
 
-    const dx = enemy.x-player.x;
-    const dy = enemy.y-player.y;
+    const dx =
+    enemy.x-player.x;
+
+    const dy =
+    enemy.y-player.y;
 
     const dist =
     Math.sqrt(dx*dx+dy*dy);
@@ -362,7 +368,7 @@ function damageEnemies(range,damage){
 
       if(enemy.life <= 0){
 
-        score += enemy.boss ? 200 : 10;
+        score += 10;
 
         enemies.splice(
           enemies.indexOf(enemy),
@@ -382,12 +388,19 @@ function update(){
   let oldX = player.x;
   let oldY = player.y;
 
-  if(keys["w"]) player.y -= player.speed;
-  if(keys["s"]) player.y += player.speed;
-  if(keys["a"]) player.x -= player.speed;
-  if(keys["d"]) player.x += player.speed;
+  if(keys["w"])
+  player.y -= player.speed;
 
-  currentMap.walls.forEach(wall=>{
+  if(keys["s"])
+  player.y += player.speed;
+
+  if(keys["a"])
+  player.x -= player.speed;
+
+  if(keys["d"])
+  player.x += player.speed;
+
+  currentRoom.walls.forEach(wall=>{
 
     if(
       player.x + player.size/2 > wall.x &&
@@ -407,8 +420,11 @@ function update(){
 
   enemies.forEach(enemy=>{
 
-    const dx = player.x-enemy.x;
-    const dy = player.y-enemy.y;
+    const dx =
+    player.x-enemy.x;
+
+    const dy =
+    player.y-enemy.y;
 
     const dist =
     Math.sqrt(dx*dx+dy*dy);
@@ -422,7 +438,7 @@ function update(){
     enemy.x += moveX;
     enemy.y += moveY;
 
-    currentMap.walls.forEach(wall=>{
+    currentRoom.walls.forEach(wall=>{
 
       if(
         enemy.x + enemy.size/2 > wall.x &&
@@ -434,11 +450,11 @@ function update(){
       ){
 
         enemy.x -= moveX*2;
-
         enemy.y -= moveY*2;
 
-        enemy.x += Math.random()*6-3;
-        enemy.y += Math.random()*6-3;
+        enemy.x += Math.random()*8-4;
+        enemy.y += Math.random()*8-4;
+
       }
 
     });
@@ -453,76 +469,35 @@ function update(){
 
       player.life -= enemy.damage;
 
-      screenShake = 8;
+      screenShake = 10;
 
     }
 
   });
 
-  for(let i=0;i<enemies.length;i++){
-
-    for(let j=i+1;j<enemies.length;j++){
-
-      let a = enemies[i];
-      let b = enemies[j];
-
-      let dx = b.x-a.x;
-      let dy = b.y-a.y;
-
-      let dist =
-      Math.sqrt(dx*dx+dy*dy);
-
-      let minDist = a.size;
-
-      if(dist < minDist){
-
-        let angle =
-        Math.atan2(dy,dx);
-
-        let force =
-        (minDist-dist)*0.1;
-
-        a.x -= Math.cos(angle)*force;
-        a.y -= Math.sin(angle)*force;
-
-        b.x += Math.cos(angle)*force;
-        b.y += Math.sin(angle)*force;
-      }
-
-    }
-
-  }
-
   if(enemies.length <= 0){
 
-    wave++;
-
-    saveGame();
-
-    spawnWave();
+    nextRoom();
 
   }
 
-  if(player.attackCooldown>0)
+  if(player.attackCooldown > 0)
   player.attackCooldown--;
 
-  if(player.skillCooldown>0)
-  player.skillCooldown--;
-
-  if(player.explosionCooldown>0)
-  player.explosionCooldown--;
-
-  if(player.berserkCooldown>0)
-  player.berserkCooldown--;
-
-  if(player.dashCooldown>0)
+  if(player.dashCooldown > 0)
   player.dashCooldown--;
 
-  lifeText.innerText =
-  `❤️ ${player.life}`;
+  if(player.skillCooldown > 0)
+  player.skillCooldown--;
 
-  waveText.innerText =
-  `🌊 ${wave}`;
+  lifeText.innerText =
+  `❤️ ${player.life}/${player.maxLife}`;
+
+  floorText.innerText =
+  `🏰 Floor ${floor}`;
+
+  roomText.innerText =
+  `🚪 Room ${room}`;
 
   scoreText.innerText =
   `⭐ ${score}`;
@@ -536,21 +511,14 @@ function update(){
   document.getElementById("bar1").style.width =
   `${100-(player.skillCooldown/300)*100}%`;
 
-  document.getElementById("bar2").style.width =
-  `${100-(player.explosionCooldown/500)*100}%`;
-
-  document.getElementById("bar3").style.width =
-  `${100-(player.berserkCooldown/900)*100}%`;
-
   if(player.life <= 0){
 
     gameStarted = false;
 
-    gameOverScreen.style.display =
-    "flex";
+    gameOver.style.display = "flex";
 
-    finalScore.innerText =
-    `Wave ${wave} | Score ${score}`;
+    finalText.innerText =
+    `Floor ${floor} | Score ${score}`;
 
   }
 
@@ -574,7 +542,24 @@ function draw(){
 
   ctx.translate(shakeX,shakeY);
 
-  ctx.fillStyle = currentMap.bg;
+  // fundo
+  if(currentRoom.theme === "lava"){
+
+    ctx.fillStyle = "#2a0000";
+
+  }
+
+  if(currentRoom.theme === "cyber"){
+
+    ctx.fillStyle = "#000a1f";
+
+  }
+
+  if(currentRoom.theme === "void"){
+
+    ctx.fillStyle = "#160025";
+
+  }
 
   ctx.fillRect(
     0,
@@ -583,13 +568,34 @@ function draw(){
     canvas.height
   );
 
-  currentMap.walls.forEach(wall=>{
+  // decoração cyber
+  if(currentRoom.theme === "cyber"){
+
+    ctx.strokeStyle =
+    "rgba(0,150,255,0.15)";
+
+    for(let x=0;x<canvas.width;x+=50){
+
+      ctx.beginPath();
+
+      ctx.moveTo(x,0);
+
+      ctx.lineTo(x,canvas.height);
+
+      ctx.stroke();
+
+    }
+
+  }
+
+  // paredes
+  currentRoom.walls.forEach(wall=>{
 
     ctx.shadowBlur = 20;
 
-    ctx.shadowColor = currentMap.wall;
+    ctx.shadowColor = "#555";
 
-    ctx.fillStyle = currentMap.wall;
+    ctx.fillStyle = "#333";
 
     ctx.fillRect(
       wall.x,
@@ -600,6 +606,7 @@ function draw(){
 
   });
 
+  // inimigos
   enemies.forEach(enemy=>{
 
     ctx.shadowBlur = 20;
@@ -617,6 +624,7 @@ function draw(){
 
   });
 
+  // player
   ctx.shadowBlur = 25;
 
   ctx.shadowColor = player.color;
@@ -630,6 +638,7 @@ function draw(){
     player.size
   );
 
+  // ataque
   if(player.attacking){
 
     ctx.beginPath();
@@ -644,26 +653,6 @@ function draw(){
       70,
       0,
       Math.PI*1.5
-    );
-
-    ctx.stroke();
-
-  }
-
-  if(player.usingSkill){
-
-    ctx.beginPath();
-
-    ctx.strokeStyle = "#00ffff";
-
-    ctx.lineWidth = 15;
-
-    ctx.arc(
-      player.x,
-      player.y,
-      150,
-      0,
-      Math.PI*2
     );
 
     ctx.stroke();
